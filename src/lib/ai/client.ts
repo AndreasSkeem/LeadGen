@@ -34,8 +34,8 @@ export async function callOpenRouter(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://leadflow.app",
-      "X-Title": "LeadFlow",
+      "HTTP-Referer": "https://github.com/AndreasSkeem/LeadGen",
+      "X-Title": "LeadGen",
     },
     body: JSON.stringify({
       model,

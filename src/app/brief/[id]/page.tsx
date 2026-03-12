@@ -258,7 +258,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="font-semibold text-gray-900 tracking-tight text-sm">
-            LeadFlow
+            LeadGen
           </Link>
           <span className="text-xs text-gray-400">Your brief</span>
         </div>

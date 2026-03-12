@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LeadFlow — Find the right mover",
+  title: "LeadGen — Find the right mover",
   description:
     "Tell us about your move. We'll match you with trusted moving companies who compete for your job.",
 };

@@ -6,7 +6,7 @@ export default function HomePage() {
       {/* Nav */}
       <header className="border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="font-semibold text-gray-900 tracking-tight">LeadFlow</span>
+          <span className="font-semibold text-gray-900 tracking-tight">LeadGen</span>
           <span className="text-sm text-gray-400">For movers</span>
         </div>
       </header>
@@ -130,7 +130,7 @@ export default function HomePage() {
 
       <footer className="border-t border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between">
-          <span className="text-sm text-gray-400">LeadFlow</span>
+          <span className="text-sm text-gray-400">LeadGen</span>
           <span className="text-sm text-gray-300">Mock POC</span>
         </div>
       </footer>
