@@ -1,8 +1,10 @@
+/* eslint-disable @next/next/no-page-custom-font */
 import type { Metadata } from "next";
 import "./globals.css";
+import { DemoBanner } from "@/components/DemoBanner";
 
 export const metadata: Metadata = {
-  title: "LeadGen — Find the right mover",
+  title: "LeadGen - Find the right mover",
   description:
     "Tell us about your move. We'll match you with trusted moving companies who compete for your job.",
 };
@@ -14,7 +16,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans text-gray-700 antialiased">
+        <DemoBanner />
+        {children}
+      </body>
     </html>
   );
 }

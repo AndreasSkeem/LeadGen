@@ -97,7 +97,12 @@ export interface Provider {
 
 export interface Bid {
   provider: Provider;
-  price_range_dkk: { min: number; max: number };
+  price_range: { min: number; max: number };
+  currency: "DKK" | "SEK" | "NOK";
+  price_range_after_rut?: { min: number; max: number }; // SEK only — after 50% RUT deduction
+  estimated_hours: string;
+  available_date: string;
+  bid_tier: "budget" | "standard" | "premium";
   timeline_days: number;
   message: string;
   score: number;

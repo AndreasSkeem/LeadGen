@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowUp, Sparkles, User } from "lucide-react";
 import type { ChatMessage } from "@/lib/types";
 
 interface ApiResponse {
@@ -11,7 +12,6 @@ interface ApiResponse {
   error?: string;
 }
 
-// Strip the ```json ... ``` block from display — we show it differently
 function stripJsonBlock(text: string): string {
   return text.replace(/```json[\s\S]*?```/g, "").trim();
 }
@@ -31,12 +31,10 @@ export default function QualifyPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -62,15 +60,9 @@ export default function QualifyPage() {
         });
 
         const data = (await res.json()) as ApiResponse;
+        if (!res.ok || data.error) throw new Error(data.error ?? "Something went wrong");
 
-        if (!res.ok || data.error) {
-          throw new Error(data.error ?? "Something went wrong");
-        }
-
-        setMessages([
-          ...newMessages,
-          { role: "assistant", content: data.reply },
-        ]);
+        setMessages([...newMessages, { role: "assistant", content: data.reply }]);
 
         if (data.briefId) {
           setBriefId(data.briefId);
@@ -97,47 +89,91 @@ export default function QualifyPage() {
     }
   };
 
+  const progressValue = briefComplete ? 100 : messages.length === 0 ? 18 : Math.min(84, 18 + messages.length * 14);
+
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="border-b border-gray-100 shrink-0">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg)" }}>
+      <header className="border-b shrink-0 bg-white" style={{ borderColor: "var(--border-light)" }}>
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="font-semibold text-gray-900 tracking-tight text-sm">
+          <Link href="/" className="font-display text-lg font-semibold tracking-tight" style={{ color: "var(--primary)" }}>
             LeadGen
           </Link>
-          <span className="text-xs text-gray-400">Moving qualification</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)" }}>
+                Progress
+              </span>
+              <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--border-light)" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${progressValue}%`, backgroundColor: "var(--accent)" }}
+                />
+              </div>
+            </div>
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full border" style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}>
+              Moving qualification
+            </span>
+          </div>
         </div>
       </header>
 
-      {/* Chat area */}
       <div className="flex-1 overflow-y-auto chat-scroll">
-        <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-          {/* Intro message when no messages yet */}
+        <div className="max-w-2xl mx-auto px-6 py-10 space-y-5">
           {messages.length === 0 && (
-            <div className="flex gap-4">
-              <Avatar role="assistant" />
-              <div className="flex-1">
-                <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-5 py-4 max-w-lg">
-                  <p className="text-[15px] text-gray-800 leading-relaxed">
-                    Hi, I&apos;m here to help you plan your move. Tell me a bit about it — where
-                    are you moving from and to, and roughly when?
-                  </p>
+            <div className="space-y-6 fade-in">
+              <div className="rounded-[28px] border bg-white p-5 shadow-card-md" style={{ borderColor: "var(--border)" }}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--accent)" }}>
+                      Anonymous brief
+                    </p>
+                    <h1 className="font-display text-3xl leading-tight mb-2" style={{ color: "var(--text-strong)" }}>
+                      Plan your move in a few messages.
+                    </h1>
+                    <p className="text-sm leading-relaxed max-w-lg" style={{ color: "var(--text)" }}>
+                      Describe where you&apos;re moving from and to, plus roughly when. I&apos;ll ask only what matters for an accurate moving brief.
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2 rounded-full px-3 py-1.5 border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                    <span className="text-xs font-medium">About 3 minutes</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-5">
+                  {["No account needed", "No spam calls", "Anonymous bidding"].map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border px-3 py-1.5 text-xs font-medium"
+                      style={{ borderColor: "var(--border)", color: "var(--text-muted)", backgroundColor: "var(--bg)" }}
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 message-in">
+                <AiAvatar />
+                <div className="flex-1 max-w-sm">
+                  <div className="rounded-3xl rounded-tl-lg px-5 py-4 shadow-card" style={{ backgroundColor: "var(--accent-light)" }}>
+                    <p className="text-[15px] leading-relaxed" style={{ color: "var(--text-strong)" }}>
+                      Hi, I&apos;m here to help you plan your move. Tell me a bit about it, where you&apos;re moving from and to, and roughly when.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Message history */}
           {messages.map((msg, i) => (
             <MessageBubble key={i} message={msg} />
           ))}
 
-          {/* Loading indicator */}
           {loading && (
-            <div className="flex gap-4">
-              <Avatar role="assistant" />
+            <div className="flex gap-3 message-in">
+              <AiAvatar />
               <div className="flex-1">
-                <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-5 py-4 inline-flex items-center gap-1.5 h-12">
+                <div className="inline-flex items-center gap-1.5 rounded-3xl rounded-tl-lg px-5 h-12 bg-white shadow-card">
                   <div className="typing-dot" />
                   <div className="typing-dot" />
                   <div className="typing-dot" />
@@ -146,28 +182,42 @@ export default function QualifyPage() {
             </div>
           )}
 
-          {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-sm text-red-700">
+            <div
+              className="rounded-2xl px-4 py-3 text-sm border"
+              style={{ backgroundColor: "#fff5f5", borderColor: "#fecaca", color: "#dc2626" }}
+            >
               {error}
             </div>
           )}
 
-          {/* Brief complete — CTA */}
           {briefComplete && briefId && (
-            <div className="bg-brand-50 border border-brand-100 rounded-xl p-6">
-              <p className="text-sm font-medium text-brand-700 mb-1">
-                Your moving brief is ready
-              </p>
-              <p className="text-sm text-brand-600 mb-4">
-                We&apos;ve matched you with moving companies. See their bids now.
-              </p>
-              <button
-                onClick={() => router.push(`/brief/${briefId}`)}
-                className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
-              >
-                View bids →
-              </button>
+            <div className="message-in">
+              <div className="rounded-3xl border p-6 bg-white shadow-card-md" style={{ borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "var(--accent-light)", color: "var(--accent)" }}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-strong)" }}>
+                      Your moving brief is ready
+                    </p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      Matched with moving companies in your area
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push(`/brief/${briefId}`)}
+                  className="w-full font-semibold text-sm py-3 rounded-xl text-white transition-all btn-press hover:opacity-90"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  View bids
+                </button>
+              </div>
             </div>
           )}
 
@@ -175,47 +225,51 @@ export default function QualifyPage() {
         </div>
       </div>
 
-      {/* Input area */}
       {!briefComplete && (
-        <div className="border-t border-gray-100 bg-white shrink-0">
-          <div className="max-w-3xl mx-auto px-6 py-4">
+        <div className="border-t shrink-0 bg-white" style={{ borderColor: "var(--border-light)" }}>
+          <div className="max-w-2xl mx-auto px-6 py-4">
             <form onSubmit={handleSubmit} className="flex gap-3 items-end">
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Describe your move…"
+                placeholder="Describe your move..."
                 rows={1}
                 disabled={loading}
-                className="flex-1 resize-none rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none px-4 py-3 text-[15px] text-gray-900 placeholder-gray-400 transition-colors min-h-[48px] max-h-[200px] overflow-auto disabled:opacity-50"
+                className="flex-1 resize-none outline-none px-4 py-3 text-[15px] transition-all rounded-2xl border bg-white disabled:opacity-50"
                 style={{
-                  height: "auto",
+                  borderColor: "var(--border)",
+                  color: "var(--text-strong)",
                   lineHeight: "1.5",
+                  minHeight: "48px",
+                  maxHeight: "200px",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "var(--primary)";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(30,43,60,0.08)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "var(--border)";
+                  e.target.style.boxShadow = "none";
                 }}
                 onInput={(e) => {
                   const t = e.target as HTMLTextAreaElement;
                   t.style.height = "auto";
-                  t.style.height = Math.min(t.scrollHeight, 200) + "px";
+                  t.style.height = `${Math.min(t.scrollHeight, 200)}px`;
                 }}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="shrink-0 bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl w-12 h-12 flex items-center justify-center transition-colors"
+                className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all btn-press disabled:opacity-30"
+                style={{ backgroundColor: "var(--primary)", color: "white" }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
-                </svg>
+                <ArrowUp className="w-5 h-5" />
               </button>
             </form>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Press Enter to send · Shift+Enter for new line
+            <p className="text-xs text-center mt-2.5" style={{ color: "var(--text-muted)" }}>
+              Enter to send | Shift+Enter for new line
             </p>
           </div>
         </div>
@@ -224,31 +278,24 @@ export default function QualifyPage() {
   );
 }
 
-function Avatar({ role }: { role: "user" | "assistant" }) {
-  if (role === "assistant") {
-    return (
-      <div className="shrink-0 w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center">
-        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-      </div>
-    );
-  }
+function AiAvatar() {
   return (
-    <div className="shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-        />
-      </svg>
+    <div
+      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-card"
+      style={{ backgroundColor: "var(--primary)", color: "white" }}
+    >
+      <Sparkles className="w-3.5 h-3.5" />
+    </div>
+  );
+}
+
+function UserAvatar() {
+  return (
+    <div
+      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: "var(--border)", color: "var(--text-muted)" }}
+    >
+      <User className="w-3.5 h-3.5" />
     </div>
   );
 }
@@ -258,26 +305,36 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   const hasBrief = !isUser && containsJsonBrief(message.content);
   const displayText = !isUser ? stripJsonBlock(message.content) : message.content;
 
+  if (isUser) {
+    return (
+      <div className="flex gap-3 flex-row-reverse message-in">
+        <UserAvatar />
+        <div className="flex justify-end flex-1">
+          <div
+            className="rounded-3xl rounded-tr-lg px-5 py-3.5 max-w-sm text-[15px] leading-relaxed whitespace-pre-wrap text-white"
+            style={{ backgroundColor: "var(--primary)" }}
+          >
+            {displayText}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}>
-      <Avatar role={message.role} />
-      <div className={`flex-1 ${isUser ? "flex justify-end" : ""}`}>
+    <div className="flex gap-3 message-in">
+      <AiAvatar />
+      <div className="flex-1 max-w-sm">
         <div
-          className={`
-            rounded-2xl px-5 py-4 max-w-lg text-[15px] leading-relaxed whitespace-pre-wrap
-            ${
-              isUser
-                ? "bg-brand-500 text-white rounded-tr-sm"
-                : "bg-gray-50 text-gray-800 rounded-tl-sm"
-            }
-          `}
+          className="rounded-3xl rounded-tl-lg px-5 py-4 shadow-card text-[15px] leading-relaxed whitespace-pre-wrap"
+          style={{ backgroundColor: "var(--accent-light)", color: "var(--text-strong)" }}
         >
           {displayText}
         </div>
         {hasBrief && (
-          <div className="mt-2 ml-0 text-xs text-gray-400 flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+            <svg className="w-3.5 h-3.5" style={{ color: "#16a34a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
             Moving brief generated
           </div>

@@ -4,16 +4,17 @@
 
 LeadGen is a two-sided marketplace that connects people who need to move (home or office) with moving companies (flyttefirmaer) in Scandinavia. An AI qualification engine has a conversation with the customer to understand their move, produces a structured anonymous brief, and routes it to matched providers who can bid on the job.
 
-This project is being built in two phases:
-1. **Mock POC** — demonstrates the full flow with hardcoded providers and simulated bids. Purpose: co-founder alignment.
-2. **Investor POC** — same architecture, but with a real provider database, polished UI, multi-scenario handling, and a provider dashboard. Purpose: demonstrate viability to investors.
+This project is being built in phases:
+1. **Mock POC (Phase 1a)** — basic flow: chat → brief → simulated bids → connection. Purpose: co-founder alignment. **DONE.**
+2. **Enhanced Mock POC (Phase 1b)** — realistic pricing, polished bid cards, summary card, connection flow, demo mode. Purpose: demo-ready for co-founder. See PROMPT_PHASE_1B.md.
+3. **Investor POC (Phase 2)** — real provider database, provider dashboard, multi-scenario polish, analytics. Purpose: demonstrate viability to investors.
 
-Both phases share the same codebase. The mock POC is a subset of the investor POC, not a throwaway prototype.
+All phases share the same codebase. Each phase extends the previous one.
 
 ## Architecture
 
 ```
-LeadGen/
+leadflow/
 ├── CLAUDE.md                    # You are here
 ├── .claudeignore                # Prevents Claude Code from reading secrets
 ├── .env.local                   # API keys (never committed, never read by Claude Code)
@@ -109,7 +110,7 @@ Providers see the anonymous brief and submit a bid (price range, timeline, brief
 
 Build the following and nothing more:
 
-1. **Landing page** — simple, explains what LeadGen does. One CTA: "Plan your move"
+1. **Landing page** — simple, explains what LeadFlow does. One CTA: "Plan your move"
 2. **Qualification chat** — conversational UI where the AI asks about the move. Must handle:
    - Private home move (privatflytning)
    - Office/business move (erhvervsflytning)

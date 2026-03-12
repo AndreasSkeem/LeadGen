@@ -1,157 +1,245 @@
 import Link from "next/link";
+import {
+  MessageSquare,
+  FileText,
+  Users,
+  ArrowRight,
+  Shield,
+  PhoneOff,
+  Tag,
+  Home,
+  Building2,
+  Package,
+  Globe,
+  Weight,
+} from "lucide-react";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white">
-      {/* Nav */}
-      <header className="border-b border-gray-100">
+    <main className="min-h-screen" style={{ backgroundColor: "var(--bg)" }}>
+
+      {/* ── Nav ──────────────────────────────────────────────────────────── */}
+      <header className="border-b" style={{ borderColor: "var(--border-light)", backgroundColor: "var(--bg)" }}>
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="font-semibold text-gray-900 tracking-tight">LeadGen</span>
-          <span className="text-sm text-gray-400">For movers</span>
+          <span className="font-display text-xl font-semibold tracking-tight" style={{ color: "var(--primary)" }}>
+            LeadGen
+          </span>
+          <a href="#" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+            For moving companies
+          </a>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 pt-24 pb-20">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section
+        className="max-w-5xl mx-auto px-6 pt-24 pb-28"
+        style={{
+          background: "radial-gradient(ellipse 70% 60% at 92% 15%, rgba(196,137,92,0.08) 0%, transparent 65%)",
+        }}
+      >
         <div className="max-w-2xl">
-          <p className="text-sm font-medium text-brand-500 tracking-wide uppercase mb-4">
-            Moving made simple
-          </p>
-          <h1 className="text-5xl font-light text-gray-900 leading-tight mb-6">
-            Tell us about your move.{" "}
-            <span className="font-semibold">We&apos;ll find the right movers.</span>
+          {/* Label */}
+          <div className="inline-flex items-center gap-2 mb-8 px-3 py-1.5 rounded-full border text-xs font-medium tracking-wide"
+            style={{ borderColor: "var(--border)", color: "var(--accent)", backgroundColor: "var(--accent-light)" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-500 inline-block" style={{ backgroundColor: "var(--accent)" }} />
+            Moving marketplace — Denmark · Sweden · Norway
+          </div>
+
+          {/* Headline */}
+          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl leading-[1.05] mb-7"
+            style={{ color: "var(--text-strong)" }}>
+            Tell us about{" "}
+            <span className="font-display italic font-light" style={{ color: "var(--primary)" }}>
+              your move.
+            </span>
+            <br />
+            We&apos;ll find{" "}
+            <span className="font-display italic font-light">
+              the right movers.
+            </span>
           </h1>
-          <p className="text-xl text-gray-500 leading-relaxed mb-10">
-            A short conversation with our AI gives you an anonymous brief. Trusted moving
-            companies in Scandinavia bid on your job — you choose who to connect with.
+
+          {/* Subtext */}
+          <p className="text-lg md:text-xl leading-relaxed mb-10 max-w-xl" style={{ color: "var(--text)" }}>
+            A short conversation with our AI produces an anonymous brief. Trusted
+            moving companies across Scandinavia compete for your job — you choose
+            who to connect with.
           </p>
-          <Link
-            href="/qualify"
-            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-8 py-4 rounded-lg transition-colors text-lg"
-          >
-            Plan your move
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
+
+          {/* CTA */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Link
+              href="/qualify"
+              className="inline-flex items-center gap-2.5 font-semibold px-8 py-4 rounded-2xl text-white transition-all duration-200 btn-press hover:opacity-90 active:scale-95 shadow-card-md"
+              style={{ backgroundColor: "var(--primary)" }}
+            >
+              Plan your move
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Takes about 3 minutes · No account needed
+            </p>
+          </div>
+
+          {/* Trust line */}
+          <div className="flex flex-wrap items-center gap-5 mt-10 pt-10 border-t" style={{ borderColor: "var(--border-light)" }}>
+            {[
+              { icon: Shield,   label: "Anonymous bids" },
+              { icon: PhoneOff, label: "No spam calls" },
+              { icon: Tag,      label: "Free for homeowners" },
+            ].map(({ icon: Icon, label }) => (
+              <span key={label} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
+                <Icon className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="border-t border-gray-100 bg-gray-50">
-        <div className="max-w-5xl mx-auto px-6 py-20">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-12">
+      {/* ── How it works ─────────────────────────────────────────────────── */}
+      <section className="border-t" style={{ borderColor: "var(--border-light)", backgroundColor: "white" }}>
+        <div className="max-w-5xl mx-auto px-6 py-24">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] mb-14" style={{ color: "var(--accent)" }}>
             How it works
-          </h2>
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <Step
               number="01"
+              icon={<MessageSquare className="w-5 h-5" />}
               title="Describe your move"
-              body="Chat with our AI — it asks smart questions about your move, floor level, special items, timeline, and preferences."
+              body="Chat with our AI — it asks smart questions about your origin, destination, floor access, special items, and timeline."
             />
             <Step
               number="02"
-              title="Get matched bids"
-              body="We match your anonymous brief with relevant moving companies. They compete for your job with their best offer."
+              icon={<FileText className="w-5 h-5" />}
+              title="Receive anonymous bids"
+              body="Matched moving companies receive your anonymous brief and submit competitive bids. You see their price — not their name."
             />
             <Step
               number="03"
+              icon={<Users className="w-5 h-5" />}
               title="Choose and connect"
-              body="Pick the bid you like. Both you and the mover get each other's contact details. That's when the deal happens."
+              body="Pick the bid you like. Both you and the mover exchange contact details. The deal happens between you directly."
             />
           </div>
         </div>
       </section>
 
-      {/* Move types */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-12">
-          We handle all move types
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* ── Move types ───────────────────────────────────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-24">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] mb-10" style={{ color: "var(--text-muted)" }}>
+          All move types
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: "Private homes", icon: "🏠" },
-            { label: "Office moves", icon: "🏢" },
-            { label: "Heavy items", icon: "🎹" },
-            { label: "International", icon: "✈️" },
-            { label: "Storage", icon: "📦" },
-          ].map(({ label, icon }) => (
+            { label: "Private homes",  icon: Home },
+            { label: "Office moves",   icon: Building2 },
+            { label: "Heavy items",    icon: Weight },
+            { label: "International",  icon: Globe },
+            { label: "Storage",        icon: Package },
+          ].map(({ label, icon: Icon }) => (
             <div
               key={label}
-              className="border border-gray-200 rounded-lg p-5 text-center hover:border-brand-500 transition-colors"
+              className="group flex flex-col items-center gap-3 p-5 rounded-2xl border bg-white text-center transition-all duration-200 card-lift"
+              style={{ borderColor: "var(--border)" }}
             >
-              <div className="text-2xl mb-2">{icon}</div>
-              <div className="text-sm font-medium text-gray-700">{label}</div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+                style={{ backgroundColor: "var(--accent-light)", color: "var(--accent)" }}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium" style={{ color: "var(--text-strong)" }}>{label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Countries */}
-      <section className="border-t border-gray-100 bg-gray-50">
-        <div className="max-w-5xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center gap-8">
+      {/* ── Countries ────────────────────────────────────────────────────── */}
+      <section className="border-t" style={{ borderColor: "var(--border-light)", backgroundColor: "white" }}>
+        <div className="max-w-5xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center gap-10">
           <div className="flex-1">
-            <p className="text-gray-500 text-sm">
-              Covering Denmark, Sweden, and Norway — with providers who know their local areas.
-              Our AI adapts to your language: Danish, Swedish, Norwegian, or English.
+            <p className="font-display text-xl italic mb-2" style={{ color: "var(--primary)" }}>
+              Local expertise, Scandinavian scale.
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              Providers who know their local areas — narrow Copenhagen streets, Oslo
+              hills, Stockholm staircases. Our AI adapts to your language:&nbsp;
+              Danish, Swedish, Norwegian, or English.
             </p>
           </div>
-          <div className="flex gap-8 text-center">
+          <div className="flex gap-10 shrink-0">
             {[
-              { flag: "🇩🇰", name: "Denmark" },
-              { flag: "🇸🇪", name: "Sweden" },
-              { flag: "🇳🇴", name: "Norway" },
+              { flag: "🇩🇰", name: "Denmark"  },
+              { flag: "🇸🇪", name: "Sweden"   },
+              { flag: "🇳🇴", name: "Norway"   },
             ].map(({ flag, name }) => (
-              <div key={name}>
-                <div className="text-3xl mb-1">{flag}</div>
-                <div className="text-xs text-gray-400">{name}</div>
+              <div key={name} className="text-center">
+                <div className="text-3xl mb-1.5">{flag}</div>
+                <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{name}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="max-w-5xl mx-auto px-6 py-24 text-center">
-        <h2 className="text-3xl font-light text-gray-900 mb-4">
+      {/* ── Final CTA ────────────────────────────────────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-28 text-center">
+        <h2 className="font-display text-4xl md:text-5xl mb-5" style={{ color: "var(--text-strong)" }}>
           Ready when you are.
         </h2>
-        <p className="text-gray-500 mb-8">Takes about 3 minutes. No account needed.</p>
+        <p className="text-lg mb-10" style={{ color: "var(--text-muted)" }}>
+          Takes about 3 minutes. No account. No spam.
+        </p>
         <Link
           href="/qualify"
-          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-8 py-4 rounded-lg transition-colors text-lg"
+          className="inline-flex items-center gap-2.5 font-semibold px-8 py-4 rounded-2xl text-white transition-all duration-200 btn-press hover:opacity-90 shadow-card-md"
+          style={{ backgroundColor: "var(--primary)" }}
         >
           Plan your move
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
+          <ArrowRight className="w-4 h-4" />
         </Link>
       </section>
 
-      <footer className="border-t border-gray-100">
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer className="border-t" style={{ borderColor: "var(--border-light)" }}>
         <div className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between">
-          <span className="text-sm text-gray-400">LeadGen</span>
-          <span className="text-sm text-gray-300">Mock POC</span>
+          <span className="font-display text-sm font-semibold" style={{ color: "var(--primary)" }}>
+            LeadGen
+          </span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Mock POC · 2026
+          </span>
         </div>
       </footer>
+
     </main>
   );
 }
 
+// ── Step component ─────────────────────────────────────────────────────────
+
 function Step({
   number,
+  icon,
   title,
   body,
 }: {
   number: string;
+  icon: React.ReactNode;
   title: string;
   body: string;
 }) {
   return (
     <div>
-      <div className="text-xs font-mono text-brand-500 mb-3">{number}</div>
-      <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 text-sm leading-relaxed">{body}</p>
+      <div
+        className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+        style={{ backgroundColor: "var(--accent-light)", color: "var(--accent)" }}
+      >
+        {icon}
+      </div>
+      <p className="text-xs font-mono mb-2" style={{ color: "var(--text-muted)" }}>{number}</p>
+      <h3 className="font-semibold text-base mb-2" style={{ color: "var(--text-strong)" }}>{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>{body}</p>
     </div>
   );
 }

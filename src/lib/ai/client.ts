@@ -3,7 +3,7 @@
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
 // Swap model here without touching anything else
-export const QUALIFICATION_MODEL = process.env.AI_MODEL ?? "anthropic/claude-3.5-haiku";
+export const QUALIFICATION_MODEL = process.env.AI_MODEL ?? "google/gemini-2.5-flash-lite";
 
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
