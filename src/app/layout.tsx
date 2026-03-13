@@ -2,11 +2,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { DemoBanner } from "@/components/DemoBanner";
+import { LanguageProvider } from "@/components/language-provider";
 
 export const metadata: Metadata = {
-  title: "LeadGen - Find the right mover",
+  title: "Findli - Guided moving guide",
   description:
-    "Tell us about your move. We'll match you with trusted moving companies who compete for your job.",
+    "Plan your move through a guided intake and compare matched moving companies across Scandinavia.",
 };
 
 export default function RootLayout({
@@ -25,8 +26,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans text-gray-700 antialiased">
-        <DemoBanner />
-        {children}
+        <LanguageProvider>
+          <DemoBanner />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

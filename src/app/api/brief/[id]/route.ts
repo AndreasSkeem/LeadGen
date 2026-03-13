@@ -13,7 +13,7 @@ export async function GET(
     return NextResponse.json({ error: "Brief not found" }, { status: 404 });
   }
 
-  const bids = matchProviders(brief, 3);
+  const offers = matchProviders(brief, 3);
 
-  return NextResponse.json({ brief, bids });
+  return NextResponse.json({ brief, offers });
 }

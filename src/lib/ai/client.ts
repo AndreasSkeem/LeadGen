@@ -2,8 +2,15 @@
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
-// Swap model here without touching anything else
-export const QUALIFICATION_MODEL = process.env.AI_MODEL ?? "google/gemini-2.5-flash-lite";
+// Model options (swap by uncommenting one):
+// "google/gemini-2.5-flash-lite"     — $0.10/$0.40 per M tokens, fast, good multilingual (DEFAULT)
+// "google/gemini-2.5-flash"          — $0.30/$2.50 per M tokens, stronger reasoning
+// "google/gemini-3-flash-preview"    — $0.50/$3.00 per M tokens, latest, best quality
+// "deepseek/deepseek-chat"           — ~$0.14/$0.28 per M tokens, strong but China-hosted
+// "anthropic/claude-3.5-haiku"       — $1.00/$5.00 per M tokens, reliable but pricier
+const CHAT_MODEL = "google/gemini-2.5-flash-lite";
+
+export const QUALIFICATION_MODEL = process.env.AI_MODEL ?? CHAT_MODEL;
 
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
@@ -34,8 +41,8 @@ export async function callOpenRouter(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://github.com/AndreasSkeem/LeadGen",
-      "X-Title": "LeadGen",
+      "HTTP-Referer": "https://github.com/AndreasSkeem/Findli",
+      "X-Title": "Findli",
     },
     body: JSON.stringify({
       model,

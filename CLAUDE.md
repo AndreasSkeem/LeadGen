@@ -1,8 +1,10 @@
-# LeadGen — AI-Powered Lead Generation for Moving Services (Scandinavia)
+# Findli — AI-Powered Lead Generation for Moving Services (Scandinavia)
 
 ## Project overview
 
-LeadGen is a two-sided marketplace that connects people who need to move (home or office) with moving companies (flyttefirmaer) in Scandinavia. An AI qualification engine has a conversation with the customer to understand their move, produces a structured anonymous brief, and routes it to matched providers who can bid on the job.
+Findli is a two-sided marketplace that connects people who need to move (home or office) with moving companies (flyttefirmaer) in Scandinavia.
+
+The customer completes a guided intake that feels conversational but is structured underneath. The platform turns the intake into a structured anonymous brief, applies matching and pricing logic, and routes the brief to relevant providers. Where available, providers can participate in instant rule-based offers via auto-offer settings; otherwise the lead can be sent for manual quoting.
 
 This project is being built in phases:
 1. **Mock POC (Phase 1a)** — basic flow: chat → brief → simulated bids → connection. Purpose: co-founder alignment. **DONE.**
@@ -20,14 +22,14 @@ leadflow/
 ├── .env.local                   # API keys (never committed, never read by Claude Code)
 ├── package.json
 ├── src/
-│   ├── app/                     # Next.js App Router pages
+│   ├── app/
 │   │   ├── page.tsx             # Landing / entry point
-│   │   ├── qualify/page.tsx     # Customer qualification chat
-│   │   ├── brief/[id]/page.tsx  # Anonymous brief view (customer sees bids)
-│   │   └── provider/page.tsx    # Provider dashboard (sees briefs, submits bids)
+│   │   ├── qualify/page.tsx     # Customer guided intake
+│   │   ├── brief/[id]/page.tsx  # Anonymous brief + matched offers view
+│   │   └── provider/page.tsx    # Provider dashboard
 │   ├── components/
-│   │   ├── chat/                # Chat UI components
-│   │   ├── brief/               # Brief display components
+│   │   ├── intake/              # Guided intake UI components
+│   │   ├── brief/               # Brief and offers display components
 │   │   ├── provider/            # Provider-facing components
 │   │   └── ui/                  # Shared UI primitives
 │   ├── lib/
@@ -83,8 +85,18 @@ The model name should be configurable — ideally a constant at the top of `clie
 
 ## Key design decisions
 
-### The qualification conversation
-The AI doesn't use a fixed form. It has a natural conversation guided by a structured prompt that ensures it extracts all required fields for the brief. The prompt is in `prompts/qualification.md`. The conversation should feel like talking to a knowledgeable moving consultant.
+### The qualification flow
+The customer experience should not be a long freeform chatbot conversation.
+
+Instead, use a guided intake flow that feels conversational in tone and presentation, but is structured underneath. The system should collect only the information needed for pricing, feasibility, and supplier matching.
+
+Use AI only where it adds real value, such as:
+- interpreting free-text input
+- estimating structured fields from rough descriptions
+- deciding whether a conditional follow-up is needed
+- generating the structured anonymous brief
+
+The goal is to reach a bid-ready lead with as little friction as possible.
 
 ### The anonymous brief
 After qualification, the AI produces a structured JSON brief. This is the core data object. It contains everything a moving company needs to estimate the job, but NOT the customer's identity or exact address. See `docs/brief-schema.md`.
@@ -92,8 +104,17 @@ After qualification, the AI produces a structured JSON brief. This is the core d
 ### Provider matching
 For the mock POC, matching is deterministic based on geography and service type. See `docs/matching-logic.md`.
 
-### The bidding model
-Providers see the anonymous brief and submit a bid (price range, timeline, brief message). The customer sees bids without provider identity. When they select a provider to "connect" with, both sides are revealed. The connection is the monetisation trigger.
+### The offer and bidding model
+Providers respond to structured briefs / leads.
+
+On the customer side, the platform may show:
+- instant estimates (rule-based offers generated from provider settings)
+- confirmed quotes
+- quote-on-request states
+
+The UI must not imply that all offers are live manual bids if some are rule-generated.
+
+When a customer chooses to connect with a provider, both sides are revealed. The connection is the monetisation trigger.
 
 ## Coding standards
 
@@ -110,18 +131,17 @@ Providers see the anonymous brief and submit a bid (price range, timeline, brief
 
 Build the following and nothing more:
 
-1. **Landing page** — simple, explains what LeadFlow does. One CTA: "Plan your move"
-2. **Qualification chat** — conversational UI where the AI asks about the move. Must handle:
+1. **Landing page** — simple, explains what Findli does. One CTA: "Plan your move"
+2. **Guided intake** — structured step-based qualification flow with conversational UX. Must handle:
    - Private home move (privatflytning)
    - Office/business move (erhvervsflytning)
    - Single item / heavy item move (storflytning — piano, safe, etc.)
    - International move within/out of Scandinavia
    - Storage needs (opmagasinering)
 3. **Brief output** — after qualification, show the structured anonymous brief
-4. **Provider match view** — show 3 matched providers (from hardcoded list) with simulated bids
-5. **Connection flow** — customer selects a provider, "connect" confirmation (simulated)
-
-Hardcoded providers: 8-10 real Scandinavian moving companies. See `docs/providers-seed.md`.
+4. **Matching interstitial** — a short credible loading/progress screen before results
+5. **Provider match view** — show 3 matched providers / offers (from hardcoded list), including instant estimates where relevant
+6. **Connection flow** — customer selects a provider, requests a confirmed quote, or declines / adjusts
 
 ## Phase 2: Investor POC additions (do NOT build yet)
 
@@ -140,6 +160,9 @@ Hardcoded providers: 8-10 real Scandinavian moving companies. See `docs/provider
 - The anonymous brief must be detailed enough that a real moving company could estimate the job
 - UI: clean, professional, Scandinavian design sensibility — restrained, functional, confident
 - Matching should feel logical and explainable
+- The qualification UX should feel fast and guided, not like a long chatbot interview
+- Matching should be visible and explainable, with concrete reasons why providers were selected
+- Instant estimates must be clearly distinguished from confirmed manual quotes
 
 ## Environment variables
 
