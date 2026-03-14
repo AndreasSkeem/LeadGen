@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -14,12 +14,15 @@ import {
   Shield,
   Star,
 } from "lucide-react";
-import type { Brief, Offer, OfferActionType, OfferBudgetFit, OfferType } from "@/lib/types";
+import type { Brief, Offer, OfferActionType, OfferBudgetFit, OfferType, ProviderBid, BidType, RevealedSelection } from "@/lib/types";
 import { matchProviders } from "@/lib/matching/match";
 
 export interface BriefApiResponse {
   brief: Brief;
   offers: Offer[];
+  stagedBids?: ProviderBid[];       // real provider bids from DB (may be empty or absent)
+  hasRealBids?: boolean;
+  selection?: RevealedSelection | null; // set if customer has already selected a real bid
   error?: string;
 }
 
@@ -82,6 +85,18 @@ type CopyShape = {
   moverDetails: string;
   phone: string;
   email: string;
+  // Real-bid selection / reveal
+  selectThisBid: string;
+  selectBidModalTitle: string;
+  selectBidModalBody: string;
+  selectBidConfirm: string;
+  selectionConfirmed: string;
+  selectionConfirmedBody: string;
+  yourSelectedProvider: string;
+  contactNowAvailable: string;
+  otherBidsLabel: string;
+  simulatedFallbackLabel: string;
+  alreadySelected: string;
 };
 
 export const COPY: Record<Brief["language"], CopyShape> = {
@@ -142,6 +157,17 @@ export const COPY: Record<Brief["language"], CopyShape> = {
     moverDetails: "Firmaoplysninger",
     phone: "Telefon",
     email: "Email",
+    selectThisBid: "Vælg dette tilbud",
+    selectBidModalTitle: "Vælg dette firma?",
+    selectBidModalBody: "Når du bekræfter, frigives firmaets kontaktoplysninger til dig, og dit navn og kontaktoplysninger frigives til firmaet. Du kan kun vælge ét tilbud.",
+    selectBidConfirm: "Bekræft valg",
+    selectionConfirmed: "Tilbud valgt",
+    selectionConfirmedBody: "Du har valgt dette firma. Kontaktoplysningerne er nu frigivet begge veje.",
+    yourSelectedProvider: "Dit valgte firma",
+    contactNowAvailable: "Kontaktoplysninger tilgængelige",
+    otherBidsLabel: "Øvrige tilbud (ikke valgt)",
+    simulatedFallbackLabel: "Estimerede referencetilbud",
+    alreadySelected: "Du har allerede valgt et tilbud",
   },
   sv: {
     expired: "Den här briefen har gått ut eller finns inte. Briefs lagras bara i minnet och rensas när servern startar om.",
@@ -200,6 +226,17 @@ export const COPY: Record<Brief["language"], CopyShape> = {
     moverDetails: "Företagsuppgifter",
     phone: "Telefon",
     email: "E-post",
+    selectThisBid: "Välj detta anbud",
+    selectBidModalTitle: "Välj detta företag?",
+    selectBidModalBody: "När du bekräftar frigörs företagets kontaktuppgifter till dig, och ditt namn och kontaktuppgifter frigörs till företaget. Du kan bara välja ett anbud.",
+    selectBidConfirm: "Bekräfta val",
+    selectionConfirmed: "Anbud valt",
+    selectionConfirmedBody: "Du har valt detta företag. Kontaktuppgifterna är nu tillgängliga för båda parter.",
+    yourSelectedProvider: "Ditt valda företag",
+    contactNowAvailable: "Kontaktuppgifter tillgängliga",
+    otherBidsLabel: "Övriga anbud (ej valda)",
+    simulatedFallbackLabel: "Estimerade referensanbud",
+    alreadySelected: "Du har redan valt ett anbud",
   },
   no: {
     expired: "Denne briefen har utløpt eller finnes ikke. Briefs lagres bare i minnet og ryddes når serveren starter på nytt.",
@@ -258,6 +295,17 @@ export const COPY: Record<Brief["language"], CopyShape> = {
     moverDetails: "Firmadetaljer",
     phone: "Telefon",
     email: "E-post",
+    selectThisBid: "Velg dette tilbudet",
+    selectBidModalTitle: "Velg dette firmaet?",
+    selectBidModalBody: "Når du bekrefter, frigis firmaets kontaktinformasjon til deg, og ditt navn og kontaktinformasjon frigis til firmaet. Du kan bare velge ett tilbud.",
+    selectBidConfirm: "Bekreft valg",
+    selectionConfirmed: "Tilbud valgt",
+    selectionConfirmedBody: "Du har valgt dette firmaet. Kontaktinformasjon er nå tilgjengelig for begge parter.",
+    yourSelectedProvider: "Ditt valgte firma",
+    contactNowAvailable: "Kontaktinformasjon tilgjengelig",
+    otherBidsLabel: "Andre tilbud (ikke valgt)",
+    simulatedFallbackLabel: "Estimerte referansetilbud",
+    alreadySelected: "Du har allerede valgt et tilbud",
   },
   en: {
     expired: "This brief has expired or does not exist. Briefs are held in memory and cleared when the server restarts.",
@@ -316,6 +364,17 @@ export const COPY: Record<Brief["language"], CopyShape> = {
     moverDetails: "Mover details",
     phone: "Phone",
     email: "Email",
+    selectThisBid: "Select this bid",
+    selectBidModalTitle: "Choose this mover?",
+    selectBidModalBody: "By confirming, the mover's contact details are revealed to you, and your name and contact details are revealed to the mover. You can only select one bid.",
+    selectBidConfirm: "Confirm selection",
+    selectionConfirmed: "Bid selected",
+    selectionConfirmedBody: "You have selected this mover. Contact details are now available to both parties.",
+    yourSelectedProvider: "Your selected mover",
+    contactNowAvailable: "Contact details available",
+    otherBidsLabel: "Other bids (not selected)",
+    simulatedFallbackLabel: "Estimated reference offers",
+    alreadySelected: "You have already selected a bid",
   },
 };
 
@@ -481,7 +540,19 @@ export function BriefDetailsSection({ brief, copy }: { brief: Brief; copy: CopyS
   );
 }
 
-export function OffersBoard({ offers, copy, language }: { offers: Offer[]; copy: CopyShape; language: Brief["language"] }) {
+// ─── OffersBoard ───────────────────────────────────────────────────────────────
+// LEGACY DEMO PATH: Simulated offers generated at read time.
+//
+// When hasRealBids=true:
+//   - Shown below StagedBidsSection as non-selectable reference context.
+//   - Connect/select actions are disabled.
+//   - Labeled as "Estimerede referencetilbud" to distinguish from real bids.
+//
+// When hasRealBids=false:
+//   - Full legacy demo flow: connect modal, contact reveal from PROVIDER_CONTACTS dict.
+//   - Useful for demonstrating the product before real supply exists.
+
+export function OffersBoard({ offers, copy, language, hasRealBids = false }: { offers: Offer[]; copy: CopyShape; language: Brief["language"]; hasRealBids?: boolean }) {
   const [connectedOfferId, setConnectedOfferId] = useState<string | null>(null);
   const [pendingConnect, setPendingConnect] = useState<Offer | null>(null);
   const [confirmedOffer, setConfirmedOffer] = useState<Offer | null>(null);
@@ -496,32 +567,36 @@ export function OffersBoard({ offers, copy, language }: { offers: Offer[]; copy:
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--accent)" }}>
-              {copy.offerBoardTitle}
+              {hasRealBids ? copy.simulatedFallbackLabel : copy.offerBoardTitle}
             </p>
             <h2 className="font-display text-2xl md:text-3xl mb-2" style={{ color: "var(--text-strong)" }}>
               {copy.matchedOffers(offers.length)}
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              {copy.anonymous}
+              {hasRealBids
+                ? "Prisestimaterne nedenfor er automatisk genererede referencetal — ikke tilbud du kan vælge."
+                : copy.anonymous}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <ActionChip active={marketState === "none_fit"} onClick={() => setMarketState("none_fit")}>
-              {copy.noneFit}
-            </ActionChip>
-            <Link
-              href="/qualify"
-              className="text-xs font-semibold rounded-full border px-3 py-2"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-            >
-              {copy.adjustDetails}
-            </Link>
-            <ActionChip active={marketState === "waiting_for_more"} onClick={() => setMarketState("waiting_for_more")}>
-              {copy.waitForMore}
-            </ActionChip>
-          </div>
+          {!hasRealBids && (
+            <div className="flex flex-wrap gap-2">
+              <ActionChip active={marketState === "none_fit"} onClick={() => setMarketState("none_fit")}>
+                {copy.noneFit}
+              </ActionChip>
+              <Link
+                href="/qualify"
+                className="text-xs font-semibold rounded-full border px-3 py-2"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+              >
+                {copy.adjustDetails}
+              </Link>
+              <ActionChip active={marketState === "waiting_for_more"} onClick={() => setMarketState("waiting_for_more")}>
+                {copy.waitForMore}
+              </ActionChip>
+            </div>
+          )}
         </div>
-        {marketState !== "reviewing" && (
+        {!hasRealBids && marketState !== "reviewing" && (
           <div className="mt-4 rounded-2xl border px-4 py-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
             {marketState === "waiting_for_more" ? copy.waitingState : copy.noneFitState}
           </div>
@@ -548,8 +623,12 @@ export function OffersBoard({ offers, copy, language }: { offers: Offer[]; copy:
                 requested={Boolean(requestedQuotes[offerId])}
                 connected={connectedOfferId === offerId}
                 dimmed={Boolean(connectedOfferId && connectedOfferId !== offerId)}
+                // When real bids exist, disable the legacy connect action on simulated offers
+                actionsDisabled={hasRealBids}
                 copy={copy}
                 onAction={(action) => {
+                  // Legacy demo flow — only active when hasRealBids=false
+                  if (hasRealBids) return;
                   if (action === "connect_with_mover") {
                     setPendingConnect(offer);
                     return;
@@ -570,7 +649,8 @@ export function OffersBoard({ offers, copy, language }: { offers: Offer[]; copy:
         </div>
       )}
 
-      {pendingConnect && (
+      {/* Legacy demo connect modal — only shown when hasRealBids=false */}
+      {!hasRealBids && pendingConnect && (
         <ConnectionModal
           offer={pendingConnect}
           copy={copy}
@@ -583,7 +663,7 @@ export function OffersBoard({ offers, copy, language }: { offers: Offer[]; copy:
         />
       )}
 
-      {confirmedOffer && <ConnectedOfferModal offer={confirmedOffer} copy={copy} onClose={() => setConfirmedOffer(null)} />}
+      {!hasRealBids && confirmedOffer && <ConnectedOfferModal offer={confirmedOffer} copy={copy} onClose={() => setConfirmedOffer(null)} />}
     </section>
   );
 }
@@ -597,6 +677,7 @@ function OfferCard({
   requested,
   connected,
   dimmed,
+  actionsDisabled = false,
   copy,
   onAction,
 }: {
@@ -608,6 +689,7 @@ function OfferCard({
   requested: boolean;
   connected: boolean;
   dimmed: boolean;
+  actionsDisabled?: boolean;
   copy: CopyShape;
   onAction: (action: OfferActionType) => void;
 }) {
@@ -687,24 +769,27 @@ function OfferCard({
         </p>
       </div>
 
-      <div className="space-y-2">
-        {offer.customer_actions.map((action) => {
-          const disabled = connected || (action.type === "request_confirmed_quote" && requested);
-          const label = action.type === "save_for_comparison" && saved ? copy.saved : action.type === "request_confirmed_quote" && requested ? copy.quoteRequested : action.label;
+      {/* When real bids exist, actions on simulated cards are hidden — they are reference-only */}
+      {!actionsDisabled && (
+        <div className="space-y-2">
+          {offer.customer_actions.map((action) => {
+            const disabled = connected || (action.type === "request_confirmed_quote" && requested);
+            const label = action.type === "save_for_comparison" && saved ? copy.saved : action.type === "request_confirmed_quote" && requested ? copy.quoteRequested : action.label;
 
-          return (
-            <button
-              key={action.type}
-              onClick={() => onAction(action.type)}
-              disabled={disabled}
-              className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold transition-all btn-press option-lift ${action.primary ? "text-white hover:opacity-90" : "border hover:border-gray-400"} disabled:opacity-50`}
-              style={action.primary ? { backgroundColor: "var(--primary)" } : { borderColor: "var(--border)", color: "var(--text-strong)" }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={action.type}
+                onClick={() => onAction(action.type)}
+                disabled={disabled}
+                className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold transition-all btn-press option-lift ${action.primary ? "text-white hover:opacity-90" : "border hover:border-gray-400"} disabled:opacity-50`}
+                style={action.primary ? { backgroundColor: "var(--primary)" } : { borderColor: "var(--border)", color: "var(--text-strong)" }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </article>
   );
 }
@@ -1038,4 +1123,444 @@ export function moveTypeLabel(type: Brief["move_type"], lang: Brief["language"])
 
 function cap(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+}
+
+// ─── StagedBidsSection ────────────────────────────────────────────────────────
+// Shown on the customer offers page when real provider bids exist in the DB.
+// Rendered ABOVE the simulated OffersBoard.
+//
+// Selection flow:
+//   - If no selection: each card shows "Select this bid" button.
+//   - If selection exists: selected card shows revealed contact info; others are dimmed.
+//
+// This is the REAL persisted marketplace path. Distinct from the legacy simulated
+// connect flow in OffersBoard (which only runs when hasRealBids is false).
+
+const BID_TYPE_LABELS: Record<BidType, string> = {
+  binding: "Fast pris",
+  bounded_estimate: "Prisestimat",
+  survey_required: "Besigtigelse krævet",
+};
+
+// ─── Selection confirmation panel ─────────────────────────────────────────────
+// Shown after a customer selects a real bid. Replaces the bid card for the selected bid.
+
+function SelectionConfirmationPanel({
+  bid,
+  providerContact,
+  copy,
+}: {
+  bid: ProviderBid;
+  providerContact: { phone: string; email: string } | null;
+  copy: CopyShape;
+}) {
+  return (
+    <section
+      className="rounded-[28px] border p-6 md:p-8 space-y-5 shadow-card-lg scale-in text-center"
+      style={{ borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }}
+    >
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto check-draw" style={{ backgroundColor: "#dcfce7" }}>
+        <Check className="w-7 h-7" style={{ color: "var(--success)" }} />
+      </div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] mb-1" style={{ color: "var(--success)" }}>
+          {copy.selectionConfirmed}
+        </p>
+        <h2 className="font-display text-2xl md:text-3xl" style={{ color: "var(--text-strong)" }}>
+          {bid.providerName}
+        </h2>
+        <p className="text-sm mt-2 max-w-md mx-auto" style={{ color: "var(--text)" }}>
+          {copy.selectionConfirmedBody}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+        {/* Provider contact */}
+        <div className="rounded-2xl border p-4" style={{ borderColor: "#bbf7d0", backgroundColor: "white" }}>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "#16a34a" }}>
+            {copy.contactNowAvailable}
+          </p>
+          <p className="text-base font-semibold mb-1" style={{ color: "var(--text-strong)" }}>
+            {bid.providerName}
+          </p>
+          {providerContact ? (
+            <div className="space-y-2 mt-3">
+              <ContactRow icon={<Phone className="w-4 h-4" />} label={copy.phone} value={providerContact.phone} />
+              <ContactRow icon={<Mail className="w-4 h-4" />} label={copy.email} value={providerContact.email} />
+            </div>
+          ) : (
+            <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>
+              Firmaet kontakter dig direkte.
+            </p>
+          )}
+        </div>
+
+        {/* Bid summary */}
+        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
+            {BID_TYPE_LABELS[bid.bidType]}
+          </p>
+          {bid.priceMin !== null && (
+            <p className="text-xl font-bold mb-1" style={{ color: "var(--text-strong)" }}>
+              {bid.priceMin.toLocaleString("da-DK")}
+              {bid.priceMax && bid.priceMax !== bid.priceMin ? `–${bid.priceMax.toLocaleString("da-DK")}` : ""}{" "}
+              <span className="text-sm font-normal">{bid.currency}</span>
+            </p>
+          )}
+          {bid.availableDate && (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Ledig fra {bid.availableDate}</p>
+          )}
+          {bid.message && (
+            <p className="text-sm mt-3 leading-relaxed" style={{ color: "var(--text)" }}>{bid.message}</p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Select-bid confirmation modal ────────────────────────────────────────────
+
+function SelectBidModal({
+  bid,
+  copy,
+  submitting,
+  onConfirm,
+  onCancel,
+}: {
+  bid: ProviderBid;
+  copy: CopyShape;
+  submitting: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(15,22,41,0.45)", backdropFilter: "blur(4px)" }}
+    >
+      <div className="bg-white rounded-3xl w-full max-w-md shadow-modal scale-in overflow-hidden">
+        <div className="px-6 pt-7 pb-5 border-b" style={{ borderColor: "var(--border-light)" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: "#dcfce7" }}
+            >
+              <Shield className="w-5 h-5" style={{ color: "var(--success)" }} />
+            </div>
+            <div>
+              <p className="font-semibold" style={{ color: "var(--text-strong)" }}>{bid.providerName}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>{BID_TYPE_LABELS[bid.bidType]}</p>
+            </div>
+          </div>
+          <h2 className="font-display text-xl" style={{ color: "var(--text-strong)" }}>{copy.selectBidModalTitle}</h2>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{copy.selectBidModalBody}</p>
+        </div>
+        <div className="px-6 py-4">
+          <div className="rounded-2xl border p-4 space-y-2" style={{ backgroundColor: "var(--bg)", borderColor: "var(--border)" }}>
+            {bid.priceMin !== null && (
+              <ContactRow
+                icon={<Star className="w-4 h-4" />}
+                label={copy.priceEstimate}
+                value={`${bid.priceMin.toLocaleString("da-DK")}${bid.priceMax && bid.priceMax !== bid.priceMin ? `–${bid.priceMax.toLocaleString("da-DK")}` : ""} ${bid.currency}`}
+              />
+            )}
+            {bid.availableDate && (
+              <ContactRow icon={<CalendarDays className="w-4 h-4" />} label={copy.availability} value={bid.availableDate} />
+            )}
+            {bid.estimatedHours && (
+              <ContactRow icon={<Clock className="w-4 h-4" />} label={copy.duration} value={`~${bid.estimatedHours}t`} />
+            )}
+          </div>
+        </div>
+        <div className="px-6 pb-6 flex gap-3">
+          <button
+            onClick={onConfirm}
+            disabled={submitting}
+            className="flex-1 font-semibold text-sm py-3.5 rounded-2xl text-white transition-all btn-press hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: "var(--success, #16a34a)" }}
+          >
+            {submitting ? "…" : copy.selectBidConfirm}
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={submitting}
+            className="px-5 py-3.5 text-sm font-medium rounded-2xl border transition-all hover:border-gray-400"
+            style={{ borderColor: "var(--border)", color: "var(--text)" }}
+          >
+            {copy.cancel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── StagedBidCard ─────────────────────────────────────────────────────────────
+
+function StagedBidCard({
+  bid,
+  isSelected,
+  isDimmed,
+  selectionLocked,
+  copy,
+  onSelectClick,
+}: {
+  bid: ProviderBid;
+  isSelected: boolean;
+  isDimmed: boolean;
+  selectionLocked: boolean; // true if some OTHER bid is selected
+  copy: CopyShape;
+  onSelectClick: () => void;
+}) {
+  const hasRange = bid.priceMin !== null && bid.priceMax !== null && bid.priceMax !== bid.priceMin;
+  const hasPrice = bid.priceMin !== null;
+
+  return (
+    <div
+      className={`rounded-[24px] border bg-white p-5 shadow-card-md space-y-4 transition-all duration-200 ${isDimmed ? "opacity-45" : ""}`}
+      style={{ borderColor: isSelected ? "#bbf7d0" : "var(--border)" }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className="text-xs font-semibold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: "#dcfce7", color: "#16a34a" }}
+            >
+              ✓ Tilbud modtaget
+            </span>
+            <span
+              className="text-xs font-semibold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: "#f1f5f9", color: "var(--text-muted)" }}
+            >
+              {BID_TYPE_LABELS[bid.bidType]}
+            </span>
+          </div>
+          <p className="text-base font-semibold" style={{ color: "var(--text-strong)" }}>
+            {bid.providerName}
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {bid.providerCountry} · Afgivet {new Date(bid.createdAt).toLocaleDateString("da-DK")}
+          </p>
+        </div>
+
+        {/* Price */}
+        <div className="text-right">
+          {hasPrice ? (
+            <>
+              <p className="text-xl font-bold" style={{ color: "var(--text-strong)" }}>
+                {bid.priceMin!.toLocaleString("da-DK")}
+                {hasRange ? `–${bid.priceMax!.toLocaleString("da-DK")}` : ""}{" "}
+                <span className="text-sm font-normal">{bid.currency}</span>
+              </p>
+              {bid.validityDays && (
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Gyldig {bid.validityDays} dage
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Pris efter besigtigelse
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Message */}
+      {bid.message && (
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>
+          {bid.message}
+        </p>
+      )}
+
+      {/* Details row */}
+      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
+        {bid.estimatedHours && <span>~{bid.estimatedHours}t</span>}
+        {bid.estimatedCrew && <span>{bid.estimatedCrew} mand</span>}
+        {bid.estimatedVehicleCount && <span>{bid.estimatedVehicleCount} bil</span>}
+        {bid.availableDate && <span>Ledig fra {bid.availableDate}</span>}
+      </div>
+
+      {/* Included services */}
+      {bid.includedServices.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
+            Inkluderet:
+          </p>
+          <ul className="space-y-0.5">
+            {bid.includedServices.map((s, i) => (
+              <li key={i} className="text-xs flex gap-1" style={{ color: "var(--text)" }}>
+                <span>·</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Assumptions */}
+      {bid.assumptions.length > 0 && (
+        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-light)", backgroundColor: "var(--bg)" }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
+            Forudsætninger:
+          </p>
+          <ul className="space-y-0.5">
+            {bid.assumptions.map((a, i) => (
+              <li key={i} className="text-xs" style={{ color: "var(--text-muted)" }}>
+                · {a}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Select button — only shown when no selection has been made yet */}
+      {!selectionLocked && (
+        <button
+          onClick={onSelectClick}
+          className="w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white transition-all btn-press hover:opacity-90"
+          style={{ backgroundColor: "var(--success, #16a34a)" }}
+        >
+          {copy.selectThisBid}
+        </button>
+      )}
+
+      {/* Already-selected marker on non-selected cards */}
+      {selectionLocked && !isSelected && (
+        <p className="text-xs text-center pt-1" style={{ color: "var(--text-muted)" }}>
+          {copy.alreadySelected}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── StagedBidsSection ─────────────────────────────────────────────────────────
+
+export function StagedBidsSection({
+  stagedBids,
+  briefId,
+  initialSelection,
+  copy,
+}: {
+  stagedBids: ProviderBid[];
+  briefId: string;
+  initialSelection: RevealedSelection | null;
+  copy: CopyShape;
+}) {
+  const [selection, setSelection] = useState<RevealedSelection | null>(initialSelection);
+  const [pendingBid, setPendingBid] = useState<ProviderBid | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [selectError, setSelectError] = useState<string | null>(null);
+
+  if (stagedBids.length === 0) return null;
+
+  const selectedBidId = selection?.bidId ?? null;
+
+  async function handleConfirmSelection() {
+    if (!pendingBid) return;
+    setSelectError(null);
+
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/brief/${briefId}/select`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bidId: pendingBid.id }),
+        });
+        const data = (await res.json()) as RevealedSelection & { error?: string };
+        if (!res.ok || data.error) {
+          setSelectError(data.error ?? "Noget gik galt. Prøv igen.");
+          setPendingBid(null);
+          return;
+        }
+        setSelection(data as RevealedSelection);
+        setPendingBid(null);
+      } catch {
+        setSelectError("Netværksfejl. Prøv igen.");
+        setPendingBid(null);
+      }
+    });
+  }
+
+  return (
+    <section className="space-y-4">
+      {/* Section header */}
+      <div
+        className="rounded-[28px] border p-5"
+        style={{ borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }}
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] mb-1" style={{ color: "#16a34a" }}>
+          Modtagne tilbud
+        </p>
+        <h2 className="font-display text-xl md:text-2xl" style={{ color: "var(--text-strong)" }}>
+          {stagedBids.length === 1
+            ? "1 leverandør har afgivet tilbud på din opgave"
+            : `${stagedBids.length} leverandører har afgivet tilbud på din opgave`}
+        </h2>
+        {!selectedBidId && (
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+            Vælg det tilbud der passer bedst — firmaets kontaktoplysninger frigives derefter.
+          </p>
+        )}
+        {selectedBidId && (
+          <p className="text-xs mt-1" style={{ color: "#16a34a" }}>
+            Du har valgt {selection!.selectedBid.providerName}. Kontaktoplysninger er frigivet.
+          </p>
+        )}
+      </div>
+
+      {/* Error banner */}
+      {selectError && (
+        <div
+          className="rounded-2xl border px-4 py-3 text-sm"
+          style={{ borderColor: "#fecaca", backgroundColor: "#fff5f5", color: "#dc2626" }}
+        >
+          {selectError}
+        </div>
+      )}
+
+      {/* Selection confirmation panel — shown above cards after selection */}
+      {selection && (
+        <SelectionConfirmationPanel
+          bid={selection.selectedBid}
+          providerContact={selection.providerContact}
+          copy={copy}
+        />
+      )}
+
+      {/* Bid cards */}
+      <div className={`grid grid-cols-1 xl:grid-cols-2 gap-5 ${selectedBidId ? "mt-2" : ""}`}>
+        {stagedBids
+          .filter((bid) => bid.id !== selectedBidId) // selected bid shown in confirmation panel, not card grid
+          .map((bid) => (
+            <StagedBidCard
+              key={bid.id}
+              bid={bid}
+              isSelected={false}
+              isDimmed={selectedBidId !== null}
+              selectionLocked={selectedBidId !== null}
+              copy={copy}
+              onSelectClick={() => setPendingBid(bid)}
+            />
+          ))}
+      </div>
+
+      {/* If all bids are the selected one, non-selected grid is empty — nothing extra needed */}
+
+      {/* Confirmation modal */}
+      {pendingBid && (
+        <SelectBidModal
+          bid={pendingBid}
+          copy={copy}
+          submitting={isPending}
+          onConfirm={() => { void handleConfirmSelection(); }}
+          onCancel={() => setPendingBid(null)}
+        />
+      )}
+    </section>
+  );
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildBriefFromIntake } from "@/lib/intake/build-brief";
 import type { IntakeData } from "@/lib/intake/types";
 import { getBidReadinessIssues } from "@/lib/qualification/validate";
-import { storeBrief } from "@/lib/store";
+import { storeBrief, logEvent } from "@/lib/db/briefs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +27,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    storeBrief(brief);
+    await storeBrief(brief, {
+      firstName: intake.fullName.trim().split(" ")[0] ?? intake.fullName.trim(),
+      email: intake.email,
+      phone: intake.phone,
+    });
+
+    await logEvent("brief_created", brief.brief_id, brief.language, {
+      move_type: brief.move_type,
+      origin_country: brief.origin.country,
+      destination_country: brief.destination.country,
+      qualification_confidence: brief.qualification_confidence,
+    });
 
     return NextResponse.json({
       briefId: brief.brief_id,

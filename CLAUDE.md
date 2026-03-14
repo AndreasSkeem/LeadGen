@@ -1,181 +1,203 @@
-# Findli — AI-Powered Lead Generation for Moving Services (Scandinavia)
+# Findli Repo Guide — Phase 1 Marketplace Build
 
-## Project overview
+## What this repo is now
 
-Findli is a two-sided marketplace that connects people who need to move (home or office) with moving companies (flyttefirmaer) in Scandinavia.
+Findli is currently a polished mock demand-side experience for moving services.
 
-The customer completes a guided intake that feels conversational but is structured underneath. The platform turns the intake into a structured anonymous brief, applies matching and pricing logic, and routes the brief to relevant providers. Where available, providers can participate in instant rule-based offers via auto-offer settings; otherwise the lead can be sent for manual quoting.
+The implemented app today is still mostly a simulation:
+- multilingual landing page
+- structured intake flow at `/qualify`
+- deterministic brief generation with optional AI summary refinement
+- brief review page
+- simulated matched offers page using hardcoded providers and local pricing logic
 
-This project is being built in phases:
-1. **Mock POC (Phase 1a)** — basic flow: chat → brief → simulated bids → connection. Purpose: co-founder alignment. **DONE.**
-2. **Enhanced Mock POC (Phase 1b)** — realistic pricing, polished bid cards, summary card, connection flow, demo mode. Purpose: demo-ready for co-founder. See PROMPT_PHASE_1B.md.
-3. **Investor POC (Phase 2)** — real provider database, provider dashboard, multi-scenario polish, analytics. Purpose: demonstrate viability to investors.
+It is **not yet** a real live marketplace.
 
-All phases share the same codebase. Each phase extends the previous one.
+Missing today:
+- database persistence
+- provider accounts / auth
+- live bid submission
+- payments
+- admin tooling
+- trust / dispute / outcome tracking
+- real provider network and routing rules
 
-## Architecture
+## Product truth
 
-```
-leadflow/
-├── CLAUDE.md                    # You are here
-├── .claudeignore                # Prevents Claude Code from reading secrets
-├── .env.local                   # API keys (never committed, never read by Claude Code)
-├── package.json
-├── src/
-│   ├── app/
-│   │   ├── page.tsx             # Landing / entry point
-│   │   ├── qualify/page.tsx     # Customer guided intake
-│   │   ├── brief/[id]/page.tsx  # Anonymous brief + matched offers view
-│   │   └── provider/page.tsx    # Provider dashboard
-│   ├── components/
-│   │   ├── intake/              # Guided intake UI components
-│   │   ├── brief/               # Brief and offers display components
-│   │   ├── provider/            # Provider-facing components
-│   │   └── ui/                  # Shared UI primitives
-│   ├── lib/
-│   │   ├── ai/
-│   │   │   ├── client.ts        # OpenRouter API client
-│   │   │   └── prompts.ts       # System prompts for qualification
-│   │   ├── matching/
-│   │   │   ├── match.ts         # Matching algorithm (provider <-> brief)
-│   │   │   └── score.ts         # Scoring logic
-│   │   ├── types.ts             # Shared TypeScript types
-│   │   └── data/
-│   │       ├── providers.ts     # Provider database (hardcoded for mock, DB for investor)
-│   │       └── scenarios.ts     # Test scenarios for demo purposes
-│   └── styles/
-│       └── globals.css
-├── prompts/
-│   └── qualification.md         # The full system prompt for the AI qualifier
-└── docs/
-    ├── brief-schema.md          # Schema documentation for the structured brief
-    ├── matching-logic.md        # How matching works
-    ├── providers-seed.md        # Seed provider data
-    └── demo-scenarios.md        # Test scenarios for demos
-```
+Do not describe the product as something it is not.
 
-## Tech stack
+Be precise:
+- The current main user flow is structured and rule-based.
+- AI is optional and secondary in the current repo.
+- Simulated offers are **not** live provider quotes.
+- Hardcoded providers are **not** a real marketplace network.
 
-- **Framework**: Next.js 14+ (App Router)
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS
-- **AI**: OpenRouter API (model-agnostic — start with cheap models like google/gemma-2-9b-it or anthropic/claude-3.5-haiku, swap freely)
-- **State**: React state + context (no external state management for now)
-- **Database**: None for mock POC. For investor POC, add Supabase or similar.
+When updating product copy or docs, never imply live bidding, real providers, or AI-first matching unless that functionality is actually implemented.
 
-## OpenRouter integration
+## What we are building next
 
-All AI calls go through OpenRouter. The client should be a thin wrapper:
+The goal is **not** to jump to a full marketplace.
+The goal is to turn the current mock into a **measurable V1 transaction and learning core**.
 
-```typescript
-const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${process.env.API_KEY_OPENROUTER}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    model: "anthropic/claude-3.5-haiku", // easily swappable
-    messages: [...],
-  }),
-});
-```
+Primary goal:
+- prove that selected matches can be higher quality than ordinary lead-gen
 
-The model name should be configurable — ideally a constant at the top of `client.ts` or an env variable so we can swap models without code changes. Start with cheap models. Frontier models are not needed for the qualification conversation.
+That means the next phase should optimize for:
+- structured demand
+- structured supply
+- contact reveal after customer selection
+- outcome tracking
+- quote reliability tracking
+- change-order visibility
+- dispute logging
 
-## Key design decisions
+## What matters strategically
 
-### The qualification flow
-The customer experience should not be a long freeform chatbot conversation.
+Findli should not optimize for the cheapest offer.
+It should optimize for the offer **most likely to survive contact, survive execution, and still feel fair afterward**.
 
-Instead, use a guided intake flow that feels conversational in tone and presentation, but is structured underneath. The system should collect only the information needed for pricing, feasibility, and supplier matching.
+The long-term moat is not “AI”.
+It is:
+- local liquidity in a narrow wedge
+- better closed-loop outcome data
+- better trust metrics
+- better supplier economics
+- workflow usefulness for suppliers
 
-Use AI only where it adds real value, such as:
-- interpreting free-text input
-- estimating structured fields from rough descriptions
-- deciding whether a conditional follow-up is needed
-- generating the structured anonymous brief
+## Current architecture facts
 
-The goal is to reach a bid-ready lead with as little friction as possible.
+Important routes and files:
+- `src/app/page.tsx` — landing page
+- `src/app/qualify/page.tsx` — 5-step intake flow
+- `src/app/api/intake/route.ts` — intake endpoint
+- `src/lib/intake/build-brief.ts` — normalized brief generation
+- `src/app/brief/[id]/page.tsx` — brief review
+- `src/app/brief/[id]/offers/page.tsx` — simulated offer page
+- `src/app/api/brief/[id]/route.ts` — fetch brief + offers
+- `src/lib/matching/*` — deterministic provider scoring
+- `src/lib/pricing/estimate.ts` — local estimate logic
+- `src/lib/store.ts` — in-memory `Map`, ephemeral
 
-### The anonymous brief
-After qualification, the AI produces a structured JSON brief. This is the core data object. It contains everything a moving company needs to estimate the job, but NOT the customer's identity or exact address. See `docs/brief-schema.md`.
+## Build priorities in order
 
-### Provider matching
-For the mock POC, matching is deterministic based on geography and service type. See `docs/matching-logic.md`.
+### 1. Persistence and event model
+Replace ephemeral in-memory storage with a real database-backed domain model.
 
-### The offer and bidding model
-Providers respond to structured briefs / leads.
+Canonical marketplace flow:
+`request -> brief -> provider candidates -> bid -> customer selection -> contact reveal -> change orders -> completion / cancellation -> final price -> dispute / review`
 
-On the customer side, the platform may show:
-- instant estimates (rule-based offers generated from provider settings)
-- confirmed quotes
-- quote-on-request states
+Core entities to introduce incrementally:
+- CustomerRequest / Brief
+- Provider
+- ProviderProfile
+- Bid
+- Selection
+- Reveal
+- ChangeOrder
+- JobOutcome
+- Dispute
+- Review / Rating
+- EventLog
 
-The UI must not imply that all offers are live manual bids if some are rule-generated.
+Do not implement every edge case at once.
+Start with the minimum schema that supports measurement.
 
-When a customer chooses to connect with a provider, both sides are revealed. The connection is the monetisation trigger.
+### 2. Operator-assisted live workflow
+Before building a full provider dashboard, support an operator-assisted workflow.
 
-## Coding standards
+Examples:
+- internal admin can seed / approve providers
+- internal admin can mark bids as live vs simulated
+- internal admin can trigger reveal
+- internal admin can record outcomes
 
-- All components are functional React with hooks
-- TypeScript strict mode — no `any` types
-- Keep components small and focused
-- All AI-related code in `src/lib/ai/`
-- All matching logic in `src/lib/matching/`
-- Data layer abstracted behind interfaces (swap hardcoded for DB without rewriting logic)
-- Use server actions or API routes for AI calls — never expose API keys client-side
-- English UI for now, structured for easy i18n later. The AI qualification conversation adapts to the customer's language (DA/SV/NO/EN).
+This is better than overbuilding auth and self-serve features too early.
 
-## Phase 1: Mock POC scope
+### 3. Minimal provider workflow
+After persistence exists, add the smallest possible live provider input path.
 
-Build the following and nothing more:
+Prefer:
+- structured provider bid submission
+- bid type: `binding`, `bounded_estimate`, `survey_required`
+- explicit assumptions field
+- simple provider access links or lightweight auth
 
-1. **Landing page** — simple, explains what Findli does. One CTA: "Plan your move"
-2. **Guided intake** — structured step-based qualification flow with conversational UX. Must handle:
-   - Private home move (privatflytning)
-   - Office/business move (erhvervsflytning)
-   - Single item / heavy item move (storflytning — piano, safe, etc.)
-   - International move within/out of Scandinavia
-   - Storage needs (opmagasinering)
-3. **Brief output** — after qualification, show the structured anonymous brief
-4. **Matching interstitial** — a short credible loading/progress screen before results
-5. **Provider match view** — show 3 matched providers / offers (from hardcoded list), including instant estimates where relevant
-6. **Connection flow** — customer selects a provider, requests a confirmed quote, or declines / adjusts
+Avoid building a full CRM before the core loop works.
 
-## Phase 2: Investor POC additions (do NOT build yet)
+### 4. Trust and reliability layer
+The product advantage should come from reliability metrics, not generic review stars.
 
-- Provider dashboard with login
-- Real bid submission flow
-- Multiple simultaneous briefs
-- Provider profiles with ratings
-- Analytics dashboard
-- Supabase backend
-- Mobile-responsive polish
-- Web search fallback for unmatched areas (if no provider in DB, search for local movers)
+Eventually track:
+- response speed
+- selection rate
+- completion rate
+- quote-held rate
+- change-order rate
+- cancellation rate
+- dispute rate
+- customer would choose again
 
-## Things to get right
+## What not to build yet
 
-- The AI must feel knowledgeable about moving in Scandinavia: typical apartment sizes, elevator access issues, storage options, cross-border customs/rules for international moves, typical pricing ranges
-- The anonymous brief must be detailed enough that a real moving company could estimate the job
-- UI: clean, professional, Scandinavian design sensibility — restrained, functional, confident
-- Matching should feel logical and explainable
-- The qualification UX should feel fast and guided, not like a long chatbot interview
-- Matching should be visible and explainable, with concrete reasons why providers were selected
-- Instant estimates must be clearly distinguished from confirmed manual quotes
+Do **not** prioritize these before the transaction loop works:
+- deep ERP integrations
+- advanced ML ranking
+- generalized expansion beyond moving
+- broad marketplace growth features
+- complex payment flows
+- premium visual redesigns
+- broad SEO content expansion
 
-## Environment variables
+Use heuristics first. Learn from real transactions. Add ML later.
 
-```
-API_KEY_OPENROUTER=your-key-here
-```
+## Coding rules for this repo
 
-These are stored in `.env.local` which is listed in `.claudeignore` and `.gitignore`.
+1. Preserve the current multilingual flow.
+2. Keep changes incremental and PR-sized.
+3. Do not rewrite working UI without reason.
+4. Prefer extending existing types and modules over parallel abstractions.
+5. Keep domain logic server-side where practical.
+6. Add small helper utilities instead of giant utility files.
+7. Keep deterministic fallbacks when AI is optional.
+8. If adding “live” behavior, clearly separate it from simulated/mock behavior.
+9. Make it easy to inspect outcomes in code and in the UI.
+10. Instrument every major transition in the marketplace flow.
 
-## Commands
+## Data and schema guidance
 
-```bash
-npm run dev      # Start development server
-npm run build    # Production build
-npm run lint     # Lint check
-```
+Design for measurement from day one.
+
+Every request / bid / reveal / outcome should be traceable.
+
+At minimum capture:
+- timestamps
+- actor type
+- locale
+- route / destination metadata
+- scope metadata
+- pricing metadata
+- bid type
+- reveal state
+- completion state
+- final price if known
+- reason codes for cancellations / repricing / disputes
+
+## Delivery expectations for Claude
+
+When asked to implement something:
+1. inspect the existing code paths first
+2. explain the minimal viable approach
+3. implement incrementally
+4. keep simulated and live behaviors clearly separated
+5. run relevant validation (`npm run lint`, `npm run build`, targeted tests if present)
+6. summarize exactly what changed and what remains mocked
+
+## Preferred decision rule
+
+If there are multiple ways to build something, choose the option that:
+- preserves shipping speed
+- creates better measurement
+- creates less hidden complexity
+- keeps future provider workflow possible
+
+The repo should evolve from **mock marketplace** -> **measurable live pilot system** -> **supplier workflow product**.

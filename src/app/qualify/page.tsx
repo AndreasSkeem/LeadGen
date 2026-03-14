@@ -359,7 +359,7 @@ export default function QualifyPage() {
                   const done = index < step;
                   return (
                     <button
-                      key={item.id}
+                      key={index}
                       type="button"
                       onClick={() => setStep(index)}
                       className="w-full text-left rounded-2xl px-4 py-3 border transition-all option-lift"

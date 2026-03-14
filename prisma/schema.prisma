@@ -1,0 +1,120 @@
+// Findli domain schema — Phase 1 marketplace foundation
+// SQLite for local dev; swap datasource for Postgres in production
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── Brief ────────────────────────────────────────────────────────────────────
+// Persists the structured customer request. The full Brief object is stored as
+// a JSON blob in `data` to avoid normalising every field before the schema
+// stabilises. Additional queryable fields are lifted to top-level columns.
+
+model Brief {
+  id              String   @id           // = brief.brief_id (UUID)
+  data            String                 // Full Brief JSON blob (no contact info)
+  locale          String                 // "da" | "sv" | "no" | "en"
+  customerContact String?                // JSON: {firstName, email, phone} — only returned in selection reveal
+  createdAt       DateTime @default(now())
+
+  events EventLog[]
+  bids   Bid[]
+}
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
+// Seeded from src/lib/data/providers.ts. isSimulated=true for all seed records.
+// Future live providers will have isSimulated=false and richer auth/profile data.
+
+model Provider {
+  id                String   @id
+  companyName       String
+  country           String   // "DK" | "SE" | "NO"
+  region            String
+  municipality      String
+  services          String   // JSON array of MoveType
+  specialties       String   // JSON array of strings
+  typicalJobSize    String   // "small" | "medium" | "large" | "all"
+  description       String
+  yearsInBusiness   Int
+  employeesApprox   Int
+  rating            Float
+  responseTimeHours Int
+  available         Boolean  @default(true)
+  isSimulated       Boolean  @default(true) // false = live provider with real bid workflow
+  createdAt         DateTime @default(now())
+
+  bids Bid[]
+}
+
+// ─── Bid ─────────────────────────────────────────────────────────────────────
+// Real bids submitted via the provider dashboard (isSimulated=false).
+// Simulated bids are generated at read time and NOT stored here.
+//
+// bidType: "binding" | "bounded_estimate" | "survey_required"
+// - binding: priceMin = priceMax (exact price)
+// - bounded_estimate: priceMin < priceMax (range)
+// - survey_required: prices may be null; message/notes required
+
+model Bid {
+  id                    String   @id @default(uuid())
+  briefId               String
+  providerId            String
+  bidType               String   // "binding" | "bounded_estimate" | "survey_required"
+  priceMin              Float?   // null allowed for survey_required
+  priceMax              Float?   // null allowed for survey_required
+  currency              String   // "DKK" | "SEK" | "NOK"
+  estimatedHours        Float?
+  estimatedCrew         Int?
+  estimatedVehicleCount Int?
+  availableDate         String?
+  validityDays          Int?
+  message               String?  // public-facing note to customer
+  notes                 String?  // internal provider notes / assumptions
+  includedServices      String   @default("[]") // JSON array of service descriptions
+  assumptions           String   @default("[]") // JSON array of assumption strings
+  isSimulated           Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  brief     Brief     @relation(fields: [briefId], references: [id])
+  provider  Provider  @relation(fields: [providerId], references: [id])
+  selection Selection?
+}
+
+// ─── Selection ────────────────────────────────────────────────────────────────
+// Created when a customer picks a bid. Triggers the reveal flow.
+
+model Selection {
+  id         String   @id @default(uuid())
+  bidId      String   @unique
+  briefId    String
+  revealedAt DateTime @default(now())  // when contact info was first revealed
+  createdAt  DateTime @default(now())
+
+  bid Bid @relation(fields: [bidId], references: [id])
+}
+
+// ─── EventLog ─────────────────────────────────────────────────────────────────
+// Every significant marketplace transition is logged here.
+// eventType examples: "brief_created" | "offers_viewed" | "bid_submitted" |
+//   "bid_updated" | "provider_dashboard_viewed" | "provider_inbox_viewed" |
+//   "provider_selected" | "contact_revealed" | "job_completed"
+// actorType: "customer" | "provider" | "operator" | "system"
+
+model EventLog {
+  id         String   @id @default(uuid())
+  eventType  String
+  briefId    String?
+  providerId String?
+  actorType  String   @default("system")
+  locale     String?
+  metadata   String   // JSON blob for arbitrary event data
+  createdAt  DateTime @default(now())
+
+  brief Brief? @relation(fields: [briefId], references: [id])
+}

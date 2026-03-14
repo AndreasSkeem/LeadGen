@@ -36,3 +36,20 @@ next-env.d.ts
 
 # local installer binaries
 docs/*.exe
+.claude/settings.local.json
+
+/src/generated/prisma
+
+# SQLite local database
+dev.db
+dev.db-shm
+dev.db-wal
+
+# Test database (separate from dev.db)
+test.db
+test.db-shm
+test.db-wal
+
+# Test artifacts (regenerated on each run)
+/test-results/
+!/test-results/.gitkeep

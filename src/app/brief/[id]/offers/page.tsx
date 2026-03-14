@@ -12,6 +12,7 @@ import {
   moveTypeLabel,
   OffersBoard,
   PageShell,
+  StagedBidsSection,
   type BriefApiResponse,
 } from "@/components/brief/brief-ui";
 
@@ -38,7 +39,7 @@ export default function OffersPage({ params }: { params: { id: string } | Promis
   if (loading) return <PageShell copy={COPY[language]}><LoadingState /></PageShell>;
   if (error || !data) return <PageShell copy={COPY[language]}><MissingBriefState message={error ?? undefined} copy={COPY[language]} /></PageShell>;
 
-  const { brief, offers } = data;
+  const { brief, offers, stagedBids = [], hasRealBids = false, selection = null } = data;
   const copy = COPY[brief.language];
 
   return (
@@ -63,7 +64,18 @@ export default function OffersPage({ params }: { params: { id: string } | Promis
           </div>
         </header>
 
-        <OffersBoard offers={offers} copy={copy} language={brief.language} />
+        {/* Real provider bids — primary selection/reveal path when present */}
+        <StagedBidsSection
+          stagedBids={stagedBids}
+          briefId={brief.brief_id}
+          initialSelection={selection ?? null}
+          copy={copy}
+        />
+
+        {/* Simulated offers — reference/fallback context.
+            When hasRealBids=true: shown as non-selectable reference, labeled accordingly.
+            When hasRealBids=false: full legacy demo connect flow is active. */}
+        <OffersBoard offers={offers} copy={copy} language={brief.language} hasRealBids={hasRealBids} />
       </div>
     </PageShell>
   );

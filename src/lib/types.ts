@@ -167,6 +167,34 @@ export interface ChatMessage {
 
 export type PreferredLanguage = "da" | "sv" | "no" | "en";
 
+// ─── Provider Bid ─────────────────────────────────────────────────────────────
+// A real bid submitted by a seeded provider via the provider dashboard.
+// Distinct from Offer, which is a simulated estimate generated at read time.
+
+export type BidType = "binding" | "bounded_estimate" | "survey_required";
+
+export interface ProviderBid {
+  id: string;
+  briefId: string;
+  providerId: string;
+  providerName: string;
+  providerCountry: "DK" | "SE" | "NO";
+  bidType: BidType;
+  priceMin: number | null;
+  priceMax: number | null;
+  currency: "DKK" | "SEK" | "NOK";
+  estimatedHours: number | null;
+  estimatedCrew: number | null;
+  estimatedVehicleCount: number | null;
+  availableDate: string | null;
+  validityDays: number | null;
+  message: string | null;
+  notes: string | null;
+  includedServices: string[];
+  assumptions: string[];
+  createdAt: string;
+}
+
 export interface QualificationProfile {
   first_name: string;
   email: string;
@@ -177,4 +205,33 @@ export interface QualificationProfile {
   allow_auto_bids?: boolean | null;
   preferredBudget: number | null;
   hardMaxBudget: number | null;
+}
+
+// ─── Customer Contact ──────────────────────────────────────────────────────────
+// Stored separately from Brief.data. Only returned through the selection reveal flow.
+
+export interface CustomerContact {
+  firstName: string;
+  email: string;
+  phone: string;
+}
+
+// ─── Provider Contact ──────────────────────────────────────────────────────────
+// Hardcoded for pilot; in production comes from Provider profile.
+
+export interface ProviderContact {
+  phone: string;
+  email: string;
+}
+
+// ─── Selection / Reveal ────────────────────────────────────────────────────────
+// Returned to the customer after they select a real bid.
+
+export interface RevealedSelection {
+  selectionId: string;
+  bidId: string;
+  briefId: string;
+  selectedBid: ProviderBid;
+  providerContact: ProviderContact | null;
+  createdAt: string;
 }
